@@ -16,12 +16,9 @@ add_subdirectory(src)
 
 
 message(STATUS "SRC : " ${SRC})
-message(STATUS "GL_SRC : " ${GL_SRC})
-message(STATUS "LIB_SRC : " ${LIB_SRC})
-message(STATUS "UTILS_SRC : " ${UTILS_SRC})
 
 # Add the executable
-add_executable(${EXECUTABLE_NAME} 
+add_executable(${EXECUTABLE_NAME}
     ${SRC}
 )
 
