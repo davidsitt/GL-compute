@@ -24,10 +24,14 @@ const char *fragmentShaderSource = R"(
     #version 330 core
     out vec4 FragColor;
     in vec2 TexCoord;
+
+    uniform int width;
+    uniform int height;
     
     void main()
-    {
-        FragColor = vec4(TexCoord, 0.0, 1.0);
+    {   
+        FragColor = vec4(width / 255.0, height / 255.0, 0.0, 1.0);
+        //FragColor = vec4(TexCoord, 0.0, 1.0);
     }
     )";
 
@@ -61,6 +65,16 @@ public:
     void Use()
     {
         glUseProgram(_program);
+    }
+
+    void SetUniform(const std::string &name, int value)
+    {
+        glUniform1i(glGetUniformLocation(_program, name.c_str()), value);
+    }
+
+    void SetUniform(const std::string &name, float value)
+    {
+        glUniform1f(glGetUniformLocation(_program, name.c_str()), value);
     }
 
 private:

@@ -1,8 +1,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <vector>
 
 #include "Shader.hpp"
+#include "FrameBuffer.hpp"
 
 // Quad vertices
 float quadVertices[] = {
@@ -53,6 +55,31 @@ int main()
 
     Shader shader;
     shader.Build();
+
+    /////////////////////////////////////////////
+    int width = 800;
+    int height = 600;
+    FrameBuffer fbo;
+    fbo.Create(width, height);
+    fbo.Bind();
+
+    shader.Use();
+    shader.SetUniform("width", 120);
+    shader.SetUniform("height", 64);
+
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    fbo.UnBind();
+
+    std::vector<uint8_t> data;
+    fbo.Color_0().GetData(data);
+    for (int i = 0; i < 50; i++)
+        std::cout << "Data : " << i << " : " << static_cast<int>(data[i]) << std::endl;
+
+    return 0;
+
+    /////////////////////////////////////////////
 
     while (!glfwWindowShouldClose(window))
     {
