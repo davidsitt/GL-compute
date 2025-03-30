@@ -9,6 +9,7 @@ string(TOLOWER ${CMAKE_PROJECT_NAME} EXECUTABLE_NAME)
 # Dependencies
 find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
+find_package(OpenCV 4.6 REQUIRED)
 
 # Add the sub-directories
 #add_subdirectory(lib)
@@ -36,12 +37,18 @@ target_compile_options(${EXECUTABLE_NAME} PRIVATE
     -Werror
 )
 
+# Suppress warnings from third party headers
+target_include_directories(${EXECUTABLE_NAME} SYSTEM PUBLIC
+    ${OpenCV_INCLUDE_DIRS}
+)
+
 target_include_directories(${EXECUTABLE_NAME} PUBLIC
     ./src
 )
 
 
 target_link_libraries(${EXECUTABLE_NAME} PUBLIC
+    ${OpenCV_LIBRARIES}
     OpenGL::GL
     glfw
     GLEW

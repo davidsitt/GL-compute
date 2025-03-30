@@ -30,8 +30,8 @@ const char *fragmentShaderSource = R"(
     
     void main()
     {   
-        FragColor = vec4(width / 255.0, height / 255.0, 0.0, 1.0);
-        //FragColor = vec4(TexCoord, 0.0, 1.0);
+        //FragColor = vec4(width / 255.0, height / 255.0, 0.0, 1.0);
+        FragColor = vec4(TexCoord, 0.0, 1.0);
     }
     )";
 

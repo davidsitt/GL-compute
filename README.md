@@ -4,7 +4,7 @@
 
 ## Dependencies
 ```
-sudo apt-get install libglfw3-dev
+sudo apt-get install libglfw3-dev libopencv-dev
 ```
 
 
@@ -13,3 +13,6 @@ sudo apt-get install libglfw3-dev
 cmake -B ./build .
 cmake --build ./build -j 20
 ```
+
+## Run
+./bin/gl-compute 

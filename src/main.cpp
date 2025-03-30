@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <vector>
+#include <opencv2/opencv.hpp>
 
 #include "Shader.hpp"
 #include "FrameBuffer.hpp"
@@ -23,8 +24,9 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    GLFWwindow *window = glfwCreateWindow(800, 600, "Framebuffer Example", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(100, 100, "Framebuffer", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -56,12 +58,15 @@ int main()
     Shader shader;
     shader.Build();
 
+    cv::Mat image = cv::imread("./res/montpellier.jpg");
+
     /////////////////////////////////////////////
-    int width = 800;
-    int height = 600;
+    int width = image.cols;
+    int height = image.rows;
     FrameBuffer fbo;
     fbo.Create(width, height);
     fbo.Bind();
+    glViewport(0, 0, width, height);
 
     shader.Use();
     shader.SetUniform("width", 120);
@@ -70,29 +75,37 @@ int main()
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
+    glfwSwapBuffers(window);
+
     fbo.UnBind();
 
-    std::vector<uint8_t> data;
-    fbo.Color_0().GetData(data);
-    for (int i = 0; i < 50; i++)
-        std::cout << "Data : " << i << " : " << static_cast<int>(data[i]) << std::endl;
+    // std::vector<uint8_t> data;
+    // fbo.Color_0().ToBuffer(data);
+    cv::Mat output;
+    fbo.Color_0().ToMat(output);
+
+    cv::imshow("Output", output);
+    cv::waitKey(0);
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
 
     return 0;
 
     /////////////////////////////////////////////
 
-    while (!glfwWindowShouldClose(window))
-    {
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+    // while (!glfwWindowShouldClose(window))
+    // {
+    //     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    //     glClear(GL_COLOR_BUFFER_BIT);
 
-        shader.Use();
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+    //     shader.Use();
+    //     glBindVertexArray(VAO);
+    //     glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-    glfwTerminate();
-    return 0;
+    //     glfwSwapBuffers(window);
+    //     glfwPollEvents();
+    // }
+    // glfwTerminate();
+    // return 0;
 }

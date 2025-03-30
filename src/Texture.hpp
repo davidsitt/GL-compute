@@ -1,8 +1,10 @@
 #ifndef Texture_hpp
 #define Texture_hpp
 
-#include "GL.hpp"
 #include <vector>
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
+#include "GL.hpp"
 
 class Texture
 {
@@ -23,7 +25,29 @@ public:
 
         glBindTexture(GL_TEXTURE_2D, _ID);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _width, _height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        std::cout << "[Texture] Created : " << _ID << std::endl;
+    }
+
+    void Load(const cv::Mat &image)
+    {
+        _width = image.cols;
+        _height = image.rows;
+
+        std::cout << "[Texture] Creating : [" << _width << " x " << _height << "]" << std::endl;
+        glGenTextures(1, &_ID);
+
+        glBindTexture(GL_TEXTURE_2D, _ID);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _width, _height, 0, GL_BGR, GL_UNSIGNED_BYTE, image.data);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -45,11 +69,20 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void GetData(std::vector<uint8_t> &data)
+    void ToBuffer(std::vector<uint8_t> &data)
     {
-        Bind();
         data = std::vector<uint8_t>(_width * _height * 4);
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+
+        Bind();
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
+        UnBind();
+    }
+
+    void ToMat(cv::Mat &mat)
+    {
+        mat = cv::Mat(_height, _width, CV_8UC3);
+        Bind();
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, mat.data);
         UnBind();
     }
 
