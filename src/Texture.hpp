@@ -20,7 +20,6 @@ public:
         _width = width;
         _height = height;
 
-        std::cout << "[Texture] Creating : [" << _width << " x " << _height << "]" << std::endl;
         glGenTextures(1, &_ID);
 
         glBindTexture(GL_TEXTURE_2D, _ID);
@@ -29,12 +28,13 @@ public:
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glGenerateMipmap(GL_TEXTURE_2D);
 
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        std::cout << "[Texture] Created : " << _ID << std::endl;
+        std::cout << "[Texture] Created : " << _ID << " [" << _width << " x " << _height << "]" << std::endl;
     }
 
     void Load(const cv::Mat &image)
@@ -42,29 +42,29 @@ public:
         _width = image.cols;
         _height = image.rows;
 
-        std::cout << "[Texture] Creating : [" << _width << " x " << _height << "]" << std::endl;
         glGenTextures(1, &_ID);
 
         glBindTexture(GL_TEXTURE_2D, _ID);
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _width, _height, 0, GL_BGR, GL_UNSIGNED_BYTE, image.data);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glGenerateMipmap(GL_TEXTURE_2D);
 
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        std::cout << "[Texture] Created : " << _ID << std::endl;
+        std::cout << "[Texture] Loaded from image : " << _ID << " [" << _width << " x " << _height << "]" << std::endl;
     }
 
-    void Bind()
+    void Bind() const
     {
         glBindTexture(GL_TEXTURE_2D, _ID);
     }
 
-    void UnBind()
+    void UnBind() const
     {
         glBindTexture(GL_TEXTURE_2D, 0);
     }
@@ -86,7 +86,6 @@ public:
         UnBind();
     }
 
-private:
     GLuint _ID;
     int _width;
     int _height;

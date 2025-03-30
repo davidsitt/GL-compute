@@ -15,8 +15,6 @@ public:
 
     void Create(int width, int height)
     {
-        std::cout << "[FrameBuffer] Creating : [" << width << " x " << height << "]" << std::endl;
-
         // Create and bind
         glGenFramebuffers(1, &_ID);
         glBindFramebuffer(GL_FRAMEBUFFER, _ID);

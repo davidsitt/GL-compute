@@ -1,37 +1,78 @@
 #ifndef Shader_hpp
 #define Shader_hpp
 
-#include "GL.hpp"
 #include <iostream>
+
+#include "GL.hpp"
+#include "Texture.hpp"
 
 // Vertex Shader
 const char *vertexShaderSource = R"(
     #version 330 core
     layout (location = 0) in vec2 aPos;
-    layout (location = 1) in vec2 aTexCoord;
+    layout (location = 1) in vec2 aTexCoords;
     
-    out vec2 TexCoord;
+    out vec2 TexCoords;
     
     void main()
     {
         gl_Position = vec4(aPos, 0.0, 1.0);
-        TexCoord = aTexCoord;
+        TexCoords = aTexCoords;
     }
     )";
 
 // Fragment Shader
 const char *fragmentShaderSource = R"(
     #version 330 core
-    out vec4 FragColor;
-    in vec2 TexCoord;
+    out vec3 FragColor;
+    in vec2 TexCoords;
 
-    uniform int width;
-    uniform int height;
+    uniform float width;
+    uniform float height;
+
+    uniform sampler2D inputTexture;
     
     void main()
-    {   
-        //FragColor = vec4(width / 255.0, height / 255.0, 0.0, 1.0);
-        FragColor = vec4(TexCoord, 0.0, 1.0);
+    {
+        vec2 dir = vec2(1.0 / width, 1.0 / height);  
+
+        vec2 offsets[9] = vec2[](
+            vec2(-dir.x,  dir.y), // top-left
+            vec2( 0.0f,    dir.y), // top-center
+            vec2( dir.x,  dir.y), // top-right
+            vec2(-dir.x,  0.0f),   // center-left
+            vec2( 0.0f,    0.0f),   // center-center
+            vec2( dir.x,  0.0f),   // center-right
+            vec2(-dir.x, -dir.y), // bottom-left
+            vec2( 0.0f,   -dir.y), // bottom-center
+            vec2( dir.x, -dir.y)  // bottom-right    
+        );
+
+        // Sharp
+        /*float kernel[9] = float[](
+            -1, -1, -1,
+            -1,  9, -1,
+            -1, -1, -1
+        );*/
+
+        // Edge (sum = 0 )
+        float kernel[9] = float[](
+            1,  1,  1,
+            1, -8,  1,
+            1,  1,  1
+        );
+    
+        // Sample the input texture
+        vec3 sampleTex[9];
+        for(int i = 0; i < 9; i++)
+            sampleTex[i] = vec3(texture(inputTexture, TexCoords.st + offsets[i]));
+
+        // Accumulate
+        vec3 col = vec3(0.0);
+        for(int i = 0; i < 9; i++)
+            col += sampleTex[i] * kernel[i];
+    
+        FragColor = col;
     }
     )";
 
@@ -52,9 +93,8 @@ public:
 
     void Build()
     {
-        std::cout << "[Shader] building" << std::endl;
-        _vertexShader = compileShader(GL_VERTEX_SHADER, vertexShaderSource);
-        _fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
+        _vertexShader = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
+        _fragmentShader = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
         _program = glCreateProgram();
         glAttachShader(_program, _vertexShader);
         glAttachShader(_program, _fragmentShader);
@@ -77,15 +117,50 @@ public:
         glUniform1f(glGetUniformLocation(_program, name.c_str()), value);
     }
 
+    void SetTexture(const std::string &name, const Texture &texture)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        texture.Bind();
+        glUniform1i(glGetUniformLocation(_program, name.c_str()), 0);
+    }
+
 private:
-    GLuint compileShader(GLenum type, const char *source)
+    GLuint CompileShader(GLenum type, const char *source)
     {
         GLuint shader = glCreateShader(type);
         glShaderSource(shader, 1, &source, NULL);
         glCompileShader(shader);
+        CheckCompileErrors(shader, "SHADER");
         return shader;
     }
 
+    void CheckCompileErrors(GLuint shader, std::string type)
+    {
+        int success;
+        char infoLog[1024];
+        if (type != "PROGRAM")
+        {
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+            if (!success)
+            {
+                glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+                std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << std::endl;
+                std::cout << infoLog << std::endl;
+            }
+        }
+        else
+        {
+            glGetProgramiv(shader, GL_LINK_STATUS, &success);
+            if (!success)
+            {
+                glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << std::endl;
+                std::cout << infoLog << std::endl;
+            }
+        }
+    }
+
+private:
     GLuint _program;
     GLuint _vertexShader;
     GLuint _fragmentShader;

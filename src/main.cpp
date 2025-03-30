@@ -26,7 +26,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    GLFWwindow *window = glfwCreateWindow(100, 100, "Framebuffer", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(1, 1, "Framebuffer", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -63,24 +63,32 @@ int main()
     /////////////////////////////////////////////
     int width = image.cols;
     int height = image.rows;
+
+    // Input data
+    Texture input;
+    input.Load(image);
+
+    // FrameBuffer
     FrameBuffer fbo;
     fbo.Create(width, height);
     fbo.Bind();
     glViewport(0, 0, width, height);
 
+    // Shader
     shader.Use();
-    shader.SetUniform("width", 120);
-    shader.SetUniform("height", 64);
+    shader.SetUniform("width", static_cast<float>(width));
+    shader.SetUniform("height", static_cast<float>(height));
+    shader.SetTexture("inputTexture", input);
 
+    // Draw
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
 
     glfwSwapBuffers(window);
 
     fbo.UnBind();
 
-    // std::vector<uint8_t> data;
-    // fbo.Color_0().ToBuffer(data);
     cv::Mat output;
     fbo.Color_0().ToMat(output);
 
@@ -91,21 +99,4 @@ int main()
     glfwTerminate();
 
     return 0;
-
-    /////////////////////////////////////////////
-
-    // while (!glfwWindowShouldClose(window))
-    // {
-    //     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    //     glClear(GL_COLOR_BUFFER_BIT);
-
-    //     shader.Use();
-    //     glBindVertexArray(VAO);
-    //     glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    //     glfwSwapBuffers(window);
-    //     glfwPollEvents();
-    // }
-    // glfwTerminate();
-    // return 0;
 }
