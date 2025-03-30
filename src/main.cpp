@@ -2,32 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-// Vertex Shader
-const char *vertexShaderSource = R"(
-    #version 330 core
-    layout (location = 0) in vec2 aPos;
-    layout (location = 1) in vec2 aTexCoord;
-    
-    out vec2 TexCoord;
-    
-    void main()
-    {
-        gl_Position = vec4(aPos, 0.0, 1.0);
-        TexCoord = aTexCoord;
-    }
-    )";
-
-// Fragment Shader
-const char *fragmentShaderSource = R"(
-    #version 330 core
-    out vec4 FragColor;
-    in vec2 TexCoord;
-    
-    void main()
-    {
-        FragColor = vec4(TexCoord, 0.0, 1.0);
-    }
-    )";
+#include "Shader.hpp"
 
 // Quad vertices
 float quadVertices[] = {
@@ -39,14 +14,6 @@ float quadVertices[] = {
     -1.0f, 1.0f, 0.0f, 1.0f,
     1.0f, -1.0f, 1.0f, 0.0f,
     1.0f, 1.0f, 1.0f, 1.0f};
-
-GLuint compileShader(GLenum type, const char *source)
-{
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
-    return shader;
-}
 
 int main()
 {
@@ -84,20 +51,15 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // Shader setup
-    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexShaderSource);
-    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
+    Shader shader;
+    shader.Build();
 
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);
+        shader.Use();
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 

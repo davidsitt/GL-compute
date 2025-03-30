@@ -30,10 +30,14 @@ set_target_properties(${EXECUTABLE_NAME} PROPERTIES
 
 
 target_compile_options(${EXECUTABLE_NAME} PRIVATE
-    #-Wall
-    #-Wextra
-    #-Wpedantic
-    #-Werror
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Werror
+)
+
+target_include_directories(${EXECUTABLE_NAME} PUBLIC
+    ./src
 )
 
 
