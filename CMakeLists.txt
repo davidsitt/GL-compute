@@ -10,6 +10,7 @@ string(TOLOWER ${CMAKE_PROJECT_NAME} EXECUTABLE_NAME)
 find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
 find_package(OpenCV 4.6 REQUIRED)
+find_package(OpenMP REQUIRED)
 
 # Add the sub-directories
 #add_subdirectory(lib)
@@ -53,6 +54,7 @@ target_link_libraries(${EXECUTABLE_NAME} PUBLIC
     OpenGL::GL
     glfw
     GLEW
+    OpenMP::OpenMP_CXX
     pthread
 )
 
