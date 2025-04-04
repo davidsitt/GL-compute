@@ -17,6 +17,7 @@ add_subdirectory(src)
 
 
 message(STATUS "SRC : " ${SRC})
+message(STATUS "SRC : " ${OpenCV_INCLUDE_DIRS})
 
 # Add the executable
 add_executable(${EXECUTABLE_NAME}

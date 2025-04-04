@@ -6,19 +6,9 @@
 
 #include "Shader.hpp"
 #include "FrameBuffer.hpp"
+#include "Quad.hpp"
 
-// Quad vertices
-float quadVertices[] = {
-    // Positions   // TexCoords
-    -1.0f, 1.0f, 0.0f, 1.0f,
-    -1.0f, -1.0f, 0.0f, 0.0f,
-    1.0f, -1.0f, 1.0f, 0.0f,
-
-    -1.0f, 1.0f, 0.0f, 1.0f,
-    1.0f, -1.0f, 1.0f, 0.0f,
-    1.0f, 1.0f, 1.0f, 1.0f};
-
-int main()
+GLFWwindow *CreateWindow()
 {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -26,6 +16,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
+    // Create the window [1x1] and invisible
     GLFWwindow *window = glfwCreateWindow(1, 1, "Framebuffer", NULL, NULL);
     if (window == NULL)
     {
@@ -34,6 +25,14 @@ int main()
         return 0;
     }
 
+    return window;
+}
+
+int main()
+{
+
+    // Make the context current
+    GLFWwindow *window = CreateWindow();
     glfwMakeContextCurrent(window);
 
     // initialise GLEW
@@ -41,40 +40,30 @@ int main()
     if (glewInit() != GLEW_OK)
         throw std::runtime_error("glewInit failed");
 
-    // Create VAO & VBO
-    GLuint VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    // Load the input image
+    cv::Mat inputImage = cv::imread("./res/montpellier.jpg");
+    int width = inputImage.cols;
+    int height = inputImage.rows;
 
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
+    // Build the shader
     Shader shader;
     shader.Build();
 
-    cv::Mat image = cv::imread("./res/montpellier.jpg");
+    // Build the Quad
+    GLuint VAO;
+    BuildQuad(VAO);
 
-    /////////////////////////////////////////////
-    int width = image.cols;
-    int height = image.rows;
-
-    // Input data
+    // Build the input texture
     Texture input;
-    input.Load(image);
+    input.Load(inputImage);
 
-    // FrameBuffer
+    // Build and bind the FrameBuffer (same size as the input)
     FrameBuffer fbo;
     fbo.Create(width, height);
     fbo.Bind();
     glViewport(0, 0, width, height);
 
-    // Shader
+    // Set Shader input
     shader.Use();
     shader.SetUniform("width", static_cast<float>(width));
     shader.SetUniform("height", static_cast<float>(height));
@@ -85,16 +74,19 @@ int main()
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
 
+    // Swap buffer and unbind
     glfwSwapBuffers(window);
-
     fbo.UnBind();
 
+    // Get the output
     cv::Mat output;
     fbo.Color_0().ToMat(output);
 
+    // Show
     cv::imshow("Output", output);
     cv::waitKey(0);
 
+    // Clean up
     glfwDestroyWindow(window);
     glfwTerminate();
 
