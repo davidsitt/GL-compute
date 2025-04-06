@@ -9,8 +9,14 @@
 class Texture
 {
 public:
-    Texture()
+    Texture() : _ID(0) {}
+    ~Texture()
     {
+        if (_ID != 0)
+        {
+            std::cout << "[Texture] Deleting : " << _ID << std::endl;
+            glDeleteTextures(1, &_ID);
+        }
     }
 
     GLuint ID() const { return _ID; }
@@ -86,6 +92,7 @@ public:
         UnBind();
     }
 
+private:
     GLuint _ID;
     int _width;
     int _height;

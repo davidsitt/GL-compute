@@ -79,18 +79,41 @@ const char *fragmentShaderSource = R"(
 class Shader
 {
 public:
-    Shader() {}
+    Shader() : _program(0), _vertexShader(0), _fragmentShader(0) {}
     ~Shader()
     {
-        std::cout << "[Shader] delete" << std::endl;
-        glDetachShader(_program, _vertexShader);
-        glDetachShader(_program, _fragmentShader);
+        if (_program != 0 && _vertexShader != 0)
+            glDetachShader(_program, _vertexShader);
 
-        glDeleteShader(_vertexShader);
-        glDeleteShader(_fragmentShader);
-        glDeleteProgram(_program);
+        if (_program != 0 && _fragmentShader != 0)
+            glDetachShader(_program, _fragmentShader);
+
+        if (_vertexShader != 0)
+        {
+            glDeleteShader(_vertexShader);
+            _vertexShader = 0;
+        }
+
+        if (_fragmentShader != 0)
+        {
+            glDeleteShader(_fragmentShader);
+            _fragmentShader = 0;
+        }
+
+        if (_program != 0)
+        {
+            std::cout << "[Shader] deleting : " << _program << std::endl;
+            glDeleteProgram(_program);
+            _program = 0;
+        }
     }
 
+    /**
+     * Build vertex and fragment shader.
+     * Create the program
+     * Attach the shaders
+     * Link
+     * */
     void Build()
     {
         _vertexShader = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
@@ -107,16 +130,35 @@ public:
         glUseProgram(_program);
     }
 
+    /**
+     * @brief Set a uniform int.
+     *
+     * @param name The name of the uniform.
+     * @param value The value of the uniform.
+     */
     void SetUniform(const std::string &name, int value)
     {
         glUniform1i(glGetUniformLocation(_program, name.c_str()), value);
     }
 
+    /**
+     * @brief  Set a uniform float.
+     *
+     * @param name The name of the uniform.
+     * @param value The value of the uniform.
+     */
     void SetUniform(const std::string &name, float value)
     {
         glUniform1f(glGetUniformLocation(_program, name.c_str()), value);
     }
 
+    /**
+     * @brief Set a uniform texture
+     *
+     * @param name The name of the uniform.
+     * @param texture The texture.
+     * @todo Handle more texture unit.
+     */
     void SetTexture(const std::string &name, const Texture &texture)
     {
         glActiveTexture(GL_TEXTURE0);

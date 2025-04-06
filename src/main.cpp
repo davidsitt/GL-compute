@@ -12,13 +12,17 @@
 #include "FrameBuffer.hpp"
 #include "Quad.hpp"
 
+// Convenience utils for durations
 typedef std::chrono::milliseconds ms;
-
 inline std::chrono::milliseconds toMS(std::chrono::high_resolution_clock::duration d)
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(d);
 }
 
+/**
+ * @brief Create an invisible window to hold an OpenGL context.
+ * @return GLFWwindow*
+ */
 GLFWwindow *CreateWindow()
 {
     glfwInit();
@@ -39,6 +43,15 @@ GLFWwindow *CreateWindow()
     return window;
 }
 
+/**
+ * @brief Apply the filter to an image using the CPU.
+ *
+ * @param input The image to filter.
+ * @param output The filtered image.
+ * @param useParallel Should the function use parallel processing.
+ *
+ * @remark To avoid handling the clamping, the border pixels are ignored.
+ */
 void FilterCPU(const cv::Mat &input, cv::Mat &output, bool useParallel)
 {
     CV_Assert(input.channels() == 3); // Ensure RGB
@@ -80,6 +93,13 @@ void FilterCPU(const cv::Mat &input, cv::Mat &output, bool useParallel)
     omp_set_num_threads(defaultThreads);
 }
 
+/**
+ * @brief Apply the filter to an image using the GPU (via OpenGL)
+ *
+ * @param input The image to filter.
+ * @param output The filtered image.
+ * @param window The window holding the GL context.
+ */
 void FilterGPU(const cv::Mat &input, cv::Mat &output, GLFWwindow *window)
 {
     int width = input.cols;
@@ -122,6 +142,12 @@ void FilterGPU(const cv::Mat &input, cv::Mat &output, GLFWwindow *window)
     fbo.Color_0().ToMat(output);
 }
 
+/**
+ * @brief Run a single fiter using both the CPU and the GPU and display the results.
+ *
+ * @param original The image to filter.
+ * @param window The window holding the GL context.
+ */
 void RunSingle(const cv::Mat &original, GLFWwindow *window)
 {
     cv::Mat outputCPU, outputGPU;
@@ -136,6 +162,18 @@ void RunSingle(const cv::Mat &original, GLFWwindow *window)
     cv::waitKey(0);
 }
 
+/**
+ * @brief Run a benchmark of the filtering run time.
+ * Compare three different methods:
+ *    # CPU no parallel processing
+ *    # CPU with parallel processing
+ *    # GPU
+ *
+ * Upscale the original image multiple times, then measure the run time of the three methods and print the results.
+ *
+ * @param original The image to filter.
+ * @param window The window holding the GL context.
+ */
 void RunBench(const cv::Mat &original, GLFWwindow *window)
 {
     // Storage for the bench
@@ -159,7 +197,6 @@ void RunBench(const cv::Mat &original, GLFWwindow *window)
         auto durationCPU_MP = toMS(t2 - t1);
         auto durationGPU = toMS(t3 - t2);
 
-        // timings
         timings.push_back(std::make_tuple(factor, input.cols * input.rows, durationCPU, durationCPU_MP, durationGPU));
     }
 
@@ -176,7 +213,6 @@ void RunBench(const cv::Mat &original, GLFWwindow *window)
 
 int main()
 {
-
     // Make the context current
     GLFWwindow *window = CreateWindow();
     glfwMakeContextCurrent(window);
@@ -189,8 +225,10 @@ int main()
     // Load the input image and create the containers
     cv::Mat original = cv::imread("./res/montpellier.jpg");
 
+    //********************************************* */
     RunSingle(original, window);
     // RunBench(original, window);
+    //********************************************* */
 
     // Clean up
     glfwDestroyWindow(window);

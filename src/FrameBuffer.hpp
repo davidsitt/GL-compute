@@ -7,8 +7,15 @@
 class FrameBuffer
 {
 public:
-    FrameBuffer()
+    FrameBuffer() : _ID(0) {}
+    ~FrameBuffer()
     {
+        if (_ID != 0)
+        {
+            std::cout << "[FrameBuffer] Deleting : " << _ID << std::endl;
+            glDeleteFramebuffers(1, &_ID);
+            _ID = 0;
+        }
     }
 
     Texture &Color_0() { return _color_0; }

@@ -13,12 +13,7 @@ find_package(OpenCV 4.6 REQUIRED)
 find_package(OpenMP REQUIRED)
 
 # Add the sub-directories
-#add_subdirectory(lib)
 add_subdirectory(src)
-
-
-message(STATUS "SRC : " ${SRC})
-message(STATUS "SRC : " ${OpenCV_INCLUDE_DIRS})
 
 # Add the executable
 add_executable(${EXECUTABLE_NAME}
@@ -30,7 +25,6 @@ set_target_properties(${EXECUTABLE_NAME} PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED True
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-
 
 target_compile_options(${EXECUTABLE_NAME} PRIVATE
     -Wall
@@ -47,7 +41,6 @@ target_include_directories(${EXECUTABLE_NAME} SYSTEM PUBLIC
 target_include_directories(${EXECUTABLE_NAME} PUBLIC
     ./src
 )
-
 
 target_link_libraries(${EXECUTABLE_NAME} PUBLIC
     ${OpenCV_LIBRARIES}
