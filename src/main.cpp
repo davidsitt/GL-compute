@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h>
 
 #include "Shader.hpp"
+#include "ShaderCompute.hpp"
 #include "FrameBuffer.hpp"
 #include "Quad.hpp"
 
@@ -26,7 +27,7 @@ inline std::chrono::milliseconds toMS(std::chrono::high_resolution_clock::durati
 GLFWwindow *CreateWindow()
 {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -142,6 +143,73 @@ void FilterGPU(const cv::Mat &input, cv::Mat &output, GLFWwindow *window)
     fbo.Color_0().ToMat(output);
 }
 
+#include <fstream>
+
+/*GLuint loadComputeShader(const char *source)
+{
+    GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
+    glShaderSource(shader, 1, &source, nullptr);
+    glCompileShader(shader);
+
+    GLint success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        char log[512];
+        glGetShaderInfoLog(shader, 512, nullptr, log);
+        std::cerr << "Shader compile error:\n"
+                  << log << std::endl;
+    }
+
+    GLuint program = glCreateProgram();
+    glAttachShader(program, shader);
+    glLinkProgram(program);
+    return program;
+}*/
+
+void FilterComputeShader(const cv::Mat &input, cv::Mat &output, GLFWwindow *window)
+{
+    const int width = input.cols;
+    const int height = input.rows;
+
+    // Add an alpha channel to the input
+    cv::Mat inputRGBA;
+    cv::cvtColor(input, inputRGBA, cv::COLOR_RGB2RGBA);
+
+    // Input texture
+    GLuint texIn;
+    glGenTextures(1, &texIn);
+    glBindTexture(GL_TEXTURE_2D, texIn);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, inputRGBA.data);
+
+    // Output texture
+    GLuint texOut;
+    glGenTextures(1, &texOut);
+    glBindTexture(GL_TEXTURE_2D, texOut);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
+
+    // Compute Shader
+    ShaderCompute shader;
+    shader.Build();
+
+    // Run
+    shader.Use();
+    glBindImageTexture(0, texIn, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
+    glBindImageTexture(1, texOut, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+    glDispatchCompute(width, height, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glFinish();
+
+    // Get the output
+    cv::Mat resultRGBA(height, width, CV_8UC4);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, resultRGBA.data);
+
+    // Drop the alpha on the output
+    cv::cvtColor(resultRGBA, output, cv::COLOR_RGBA2RGB);
+}
+
 /**
  * @brief Run a single fiter using both the CPU and the GPU and display the results.
  *
@@ -150,15 +218,17 @@ void FilterGPU(const cv::Mat &input, cv::Mat &output, GLFWwindow *window)
  */
 void RunSingle(const cv::Mat &original, GLFWwindow *window)
 {
-    cv::Mat outputCPU, outputGPU;
+    cv::Mat outputCPU, outputGPU, outputGPUCompute;
 
     // FilterCPU(original, outputCPU, false);
-    FilterCPU(original, outputCPU, true);
-    FilterGPU(original, outputGPU, window);
+    // FilterCPU(original, outputCPU, true);
+    // FilterGPU(original, outputGPU, window);
+    FilterComputeShader(original, outputGPUCompute, window);
 
     // Show
-    cv::imshow("Output CPU", outputCPU);
-    cv::imshow("Output GPU", outputGPU);
+    // cv::imshow("Output CPU", outputCPU);
+    // cv::imshow("Output GPU", outputGPU);
+    cv::imshow("Output GPU", outputGPUCompute);
     cv::waitKey(0);
 }
 

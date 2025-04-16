@@ -8,7 +8,7 @@
 
 // Vertex Shader
 const char *vertexShaderSource = R"(
-    #version 330 core
+    #version 430 core
     layout (location = 0) in vec2 aPos;
     layout (location = 1) in vec2 aTexCoords;
     
@@ -23,7 +23,7 @@ const char *vertexShaderSource = R"(
 
 // Fragment Shader
 const char *fragmentShaderSource = R"(
-    #version 330 core
+    #version 430 core
     out vec3 FragColor;
     in vec2 TexCoords;
 

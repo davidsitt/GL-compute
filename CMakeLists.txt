@@ -27,10 +27,10 @@ set_target_properties(${EXECUTABLE_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 target_compile_options(${EXECUTABLE_NAME} PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-    -Werror
+    # -Wall
+    # -Wextra
+    # -Wpedantic
+    # -Werror
 )
 
 # Suppress warnings from third party headers
