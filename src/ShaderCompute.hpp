@@ -39,7 +39,6 @@ const char *shaderSource = R"(
 
         imageStore(outputImage, pos, vec4(sum, 1.0));
     }
-
  )";
 
 class ShaderCompute

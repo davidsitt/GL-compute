@@ -95,13 +95,13 @@ void FilterCPU(const cv::Mat &input, cv::Mat &output, bool useParallel)
 }
 
 /**
- * @brief Apply the filter to an image using the GPU (via OpenGL)
+ * @brief Apply the filter to an image using the GPU (via OpenGL vertex and fragment shaders)
  *
  * @param input The image to filter.
  * @param output The filtered image.
  * @param window The window holding the GL context.
  */
-void FilterGPU(const cv::Mat &input, cv::Mat &output, GLFWwindow *window)
+void FilterShader(const cv::Mat &input, cv::Mat &output, GLFWwindow *window)
 {
     int width = input.cols;
     int height = input.rows;
@@ -143,31 +143,13 @@ void FilterGPU(const cv::Mat &input, cv::Mat &output, GLFWwindow *window)
     fbo.Color_0().ToMat(output);
 }
 
-#include <fstream>
-
-/*GLuint loadComputeShader(const char *source)
-{
-    GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
-    glShaderSource(shader, 1, &source, nullptr);
-    glCompileShader(shader);
-
-    GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        char log[512];
-        glGetShaderInfoLog(shader, 512, nullptr, log);
-        std::cerr << "Shader compile error:\n"
-                  << log << std::endl;
-    }
-
-    GLuint program = glCreateProgram();
-    glAttachShader(program, shader);
-    glLinkProgram(program);
-    return program;
-}*/
-
-void FilterComputeShader(const cv::Mat &input, cv::Mat &output, GLFWwindow *window)
+/**
+ * @brief Filter the input image using compute shader.
+ *
+ * @param input The image to filter.
+ * @param output The filtered image.
+ */
+void FilterComputeShader(const cv::Mat &input, cv::Mat &output)
 {
     const int width = input.cols;
     const int height = input.rows;
@@ -206,6 +188,10 @@ void FilterComputeShader(const cv::Mat &input, cv::Mat &output, GLFWwindow *wind
     cv::Mat resultRGBA(height, width, CV_8UC4);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, resultRGBA.data);
 
+    // Delete textures
+    glDeleteTextures(1, &texIn);
+    glDeleteTextures(1, &texOut);
+
     // Drop the alpha on the output
     cv::cvtColor(resultRGBA, output, cv::COLOR_RGBA2RGB);
 }
@@ -218,17 +204,17 @@ void FilterComputeShader(const cv::Mat &input, cv::Mat &output, GLFWwindow *wind
  */
 void RunSingle(const cv::Mat &original, GLFWwindow *window)
 {
-    cv::Mat outputCPU, outputGPU, outputGPUCompute;
+    cv::Mat outputCPU, outputShader, outputComputeShader;
 
-    // FilterCPU(original, outputCPU, false);
-    // FilterCPU(original, outputCPU, true);
-    // FilterGPU(original, outputGPU, window);
-    FilterComputeShader(original, outputGPUCompute, window);
+    FilterCPU(original, outputCPU, false);
+    FilterCPU(original, outputCPU, true);
+    FilterShader(original, outputShader, window);
+    FilterComputeShader(original, outputComputeShader);
 
     // Show
-    // cv::imshow("Output CPU", outputCPU);
-    // cv::imshow("Output GPU", outputGPU);
-    cv::imshow("Output GPU", outputGPUCompute);
+    cv::imshow("Output CPU", outputCPU);
+    cv::imshow("Output GPU Shader", outputShader);
+    cv::imshow("Output GPU Compute Shader", outputComputeShader);
     cv::waitKey(0);
 }
 
@@ -247,9 +233,9 @@ void RunSingle(const cv::Mat &original, GLFWwindow *window)
 void RunBench(const cv::Mat &original, GLFWwindow *window)
 {
     // Storage for the bench
-    std::vector<std::tuple<int, int, ms, ms, ms>> timings;
+    std::vector<std::tuple<int, int, ms, ms, ms, ms>> timings;
 
-    cv::Mat input, outputCPU, outputGPU;
+    cv::Mat input, outputCPU, outputShader, outputComputeShader;
     std::vector<int> factors = {1, 2, 3, 4, 6, 8, 10};
     for (int factor : factors)
     {
@@ -260,24 +246,28 @@ void RunBench(const cv::Mat &original, GLFWwindow *window)
         auto t1 = std::chrono::high_resolution_clock::now();
         FilterCPU(input, outputCPU, true);
         auto t2 = std::chrono::high_resolution_clock::now();
-        FilterGPU(input, outputGPU, window);
+        FilterShader(input, outputShader, window);
         auto t3 = std::chrono::high_resolution_clock::now();
+        FilterComputeShader(input, outputShader);
+        auto t4 = std::chrono::high_resolution_clock::now();
 
         auto durationCPU = toMS(t1 - t0);
         auto durationCPU_MP = toMS(t2 - t1);
-        auto durationGPU = toMS(t3 - t2);
+        auto durationShader = toMS(t3 - t2);
+        auto durationComputeShader = toMS(t4 - t3);
 
-        timings.push_back(std::make_tuple(factor, input.cols * input.rows, durationCPU, durationCPU_MP, durationGPU));
+        timings.push_back(std::make_tuple(factor, input.cols * input.rows, durationCPU, durationCPU_MP, durationShader, durationComputeShader));
     }
 
-    std::cout << "Factor\tInput\tCPU\tCPU_MP\tGPU" << std::endl;
+    std::cout << "Factor\tInput\tCPU\tCPU_MP\tShader\tCompute_Shader" << std::endl;
     for (auto &triplet : timings)
     {
         std::cout << std::get<0>(triplet) << "\t";
         std::cout << std::get<1>(triplet) << "\t";
         std::cout << std::get<2>(triplet).count() << "\t";
         std::cout << std::get<3>(triplet).count() << "\t";
-        std::cout << std::get<4>(triplet).count() << std::endl;
+        std::cout << std::get<4>(triplet).count() << "\t";
+        std::cout << std::get<5>(triplet).count() << std::endl;
     }
 }
 
